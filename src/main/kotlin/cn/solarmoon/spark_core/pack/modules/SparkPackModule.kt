@@ -1,6 +1,7 @@
 package cn.solarmoon.spark_core.pack.modules
 
 import cn.solarmoon.spark_core.pack.graph.SparkPackage
+import net.minecraft.resources.ResourceLocation
 
 interface SparkPackModule {
 
@@ -21,11 +22,30 @@ interface SparkPackModule {
      * @param content      文件内容（字节码）
      * @param pack         当前压缩包
      */
-    fun read(pathSegments: List<String>, fileName: String, content: ByteArray, pack: SparkPackage, isClientSide: Boolean)
+    fun read(
+        pathSegments: List<String>,
+        fileName: String,
+        content: ByteArray,
+        pack: SparkPackage,
+        isClientSide: Boolean
+    )
 
     /**
      * 所有该模块内容读取完毕后调用此方法
      */
     fun onFinish(isClientSide: Boolean) {}
 
+    fun location(
+        pack: SparkPackage,
+        pathSegments: List<String>,
+        fileName: String
+    ): ResourceLocation {
+        var path = "spark_modules/${pack.meta.id.path}/${this.id}/"
+        for (i in 1 until pathSegments.size - 1) {
+            path += "/${pathSegments[i]}"
+        }
+        path += "/${fileName}"
+        val resourceLocation = ResourceLocation.fromNamespaceAndPath(pack.meta.id.namespace, path)
+        return resourceLocation
+    }
 }

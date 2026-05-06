@@ -26,7 +26,7 @@ import software.bernie.geckolib.loading.`object`.BakedModelFactory
 import software.bernie.geckolib.loading.`object`.GeometryTree
 import java.nio.charset.StandardCharsets
 
-class ModelModule: SparkPackModule {
+class ModelModule : SparkPackModule {
 
     override val id: String = "models"
 
@@ -82,19 +82,25 @@ class ModelModule: SparkPackModule {
 
         // 打入GeckoLib支持
         if (isClientSide && SparkPackLoader.isGeckoLib) {
-            readGeckoLibBakedGeoModel(id, json)
+            readGeckoLibBakedGeoModel(pathSegments, fileName, json, pack)
         }
 
         OModel.ORIGINS[ModelIndex(pathSegments[1], id)] = OModel(coord.x, coord.y, LinkedHashMap(bones))
     }
 
-    private fun readGeckoLibBakedGeoModel(id: ResourceLocation, json: JsonElement?) {
+    private fun readGeckoLibBakedGeoModel(
+        pathSegments: List<String>,
+        fileName: String,
+        json: JsonElement,
+        pack: SparkPackage
+    ) {
         val bakedGeoModelMap = GeckoLibCache.getBakedModels()
-        if (!id.path.endsWith(".geo")) {
+        if (!fileName.endsWith(".geo.json")) {
             return
         }
+        val resourceLocation = location(pack, pathSegments, fileName)
         try {
-            val bakedGeoModel = KeyFramesAdapter.GEO_GSON.fromJson(json!!.asJsonObject, Model::class.java)
+            val bakedGeoModel = KeyFramesAdapter.GEO_GSON.fromJson(json.asJsonObject, Model::class.java)
 
             when (bakedGeoModel.formatVersion()) {
                 FormatVersion.V_1_12_0 -> {}
@@ -111,10 +117,10 @@ class ModelModule: SparkPackModule {
                 )
             }
 
-            bakedGeoModelMap[id.withSuffix(".json")] =
-                BakedModelFactory.getForNamespace(id.namespace).constructGeoModel(GeometryTree.fromModel(bakedGeoModel))
+            bakedGeoModelMap[resourceLocation] = BakedModelFactory.getForNamespace(resourceLocation.namespace)
+                .constructGeoModel(GeometryTree.fromModel(bakedGeoModel))
         } catch (ex: Exception) {
-            throw GeckoLibConstants.exception(id, "Error loading model file", ex)
+            throw GeckoLibConstants.exception(resourceLocation, "Error loading model file", ex)
         }
     }
 
