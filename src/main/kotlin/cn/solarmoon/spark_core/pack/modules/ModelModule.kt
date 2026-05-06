@@ -6,17 +6,25 @@ import cn.solarmoon.spark_core.animation.model.origin.OBone
 import cn.solarmoon.spark_core.animation.model.origin.OCube
 import cn.solarmoon.spark_core.animation.model.origin.OLocator
 import cn.solarmoon.spark_core.animation.model.origin.OModel
+import cn.solarmoon.spark_core.pack.SparkPackLoader
 import cn.solarmoon.spark_core.pack.graph.SparkPackage
 import cn.solarmoon.spark_core.util.div
 import cn.solarmoon.spark_core.util.toRadians
+import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import com.mojang.serialization.JsonOps
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.util.GsonHelper
 import net.minecraft.world.phys.Vec3
 import org.joml.Vector2i
+import software.bernie.geckolib.GeckoLibConstants
+import software.bernie.geckolib.cache.GeckoLibCache
+import software.bernie.geckolib.loading.json.FormatVersion
+import software.bernie.geckolib.loading.json.raw.Model
+import software.bernie.geckolib.loading.json.typeadapter.KeyFramesAdapter
+import software.bernie.geckolib.loading.`object`.BakedModelFactory
+import software.bernie.geckolib.loading.`object`.GeometryTree
 import java.nio.charset.StandardCharsets
-import kotlin.collections.set
 
 class ModelModule: SparkPackModule {
 
@@ -72,7 +80,42 @@ class ModelModule: SparkPackModule {
         }
         val id = ResourceLocation.fromNamespaceAndPath(pathSegments[0], fileName.removeSuffix(".json"))
 
+        // 打入GeckoLib支持
+        if (isClientSide && SparkPackLoader.isGeckoLib) {
+            readGeckoLibBakedGeoModel(id, json)
+        }
+
         OModel.ORIGINS[ModelIndex(pathSegments[1], id)] = OModel(coord.x, coord.y, LinkedHashMap(bones))
+    }
+
+    private fun readGeckoLibBakedGeoModel(id: ResourceLocation, json: JsonElement?) {
+        val bakedGeoModelMap = GeckoLibCache.getBakedModels()
+        if (!id.path.endsWith(".geo.json")) {
+            return
+        }
+        try {
+            val bakedGeoModel = KeyFramesAdapter.GEO_GSON.fromJson(json!!.asJsonObject, Model::class.java)
+
+            when (bakedGeoModel.formatVersion()) {
+                FormatVersion.V_1_12_0 -> {}
+                FormatVersion.V_1_14_0 -> GeckoLibConstants.LOGGER.warn(
+                    "Unsupported geometry json version: 1.14.0 for model {}. This model may not appear as expected",
+                )
+
+                FormatVersion.V_1_21_0 -> GeckoLibConstants.LOGGER.warn(
+                    "Unsupported geometry json version: 1.21.0 for model {}. Supported versions: 1.12.0. Remove any rotated face UVs and re-export the model to fix",
+                )
+
+                null -> GeckoLibConstants.LOGGER.warn(
+                    "Unsupported geometry json version for model {}. Supported versions: 1.12.0",
+                )
+            }
+
+            bakedGeoModelMap[id] =
+                BakedModelFactory.getForNamespace(id.namespace).constructGeoModel(GeometryTree.fromModel(bakedGeoModel))
+        } catch (ex: Exception) {
+            throw GeckoLibConstants.exception(id, "Error loading model file", ex)
+        }
     }
 
     override fun onFinish(isClientSide: Boolean) {

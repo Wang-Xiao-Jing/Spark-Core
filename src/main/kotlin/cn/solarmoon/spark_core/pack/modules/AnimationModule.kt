@@ -3,10 +3,20 @@ package cn.solarmoon.spark_core.pack.modules
 import cn.solarmoon.spark_core.SparkCore
 import cn.solarmoon.spark_core.animation.anim.origin.OAnimationSet
 import cn.solarmoon.spark_core.animation.model.ModelIndex
+import cn.solarmoon.spark_core.pack.SparkPackLoader
+import cn.solarmoon.spark_core.pack.SparkPackLoader.LOGGER
 import cn.solarmoon.spark_core.pack.graph.SparkPackage
+import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import com.mojang.serialization.JsonOps
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.util.GsonHelper
+import software.bernie.geckolib.GeckoLibConstants
+import software.bernie.geckolib.cache.GeckoLibCache
+import software.bernie.geckolib.loading.json.typeadapter.KeyFramesAdapter
+import software.bernie.geckolib.loading.`object`.BakedAnimations
+import software.bernie.geckolib.util.CompoundException
 import java.nio.charset.StandardCharsets
 
 class AnimationModule: SparkPackModule {
@@ -28,7 +38,35 @@ class AnimationModule: SparkPackModule {
         val json = JsonParser.parseString(String(content, StandardCharsets.UTF_8))
         val animationSet = OAnimationSet.CODEC.decode(JsonOps.INSTANCE, json).orThrow.first
         val id = ResourceLocation.fromNamespaceAndPath(pathSegments[0], pathSegments[2])
+
+        // 打入GeckoLib支持
+        if (isClientSide && SparkPackLoader.isGeckoLib) {
+            readGeckoLibBakedAnimation(id, json)
+        }
+
         OAnimationSet.ORIGINS.getOrPut(ModelIndex(pathSegments[1], id)) { OAnimationSet.EMPTY }.animations.putAll(animationSet.animations)
+    }
+
+    private fun readGeckoLibBakedAnimation(id: ResourceLocation, json: JsonElement?) {
+        val bakedAnimationMap = GeckoLibCache.getBakedAnimations()
+        if (!id.path.endsWith(".animation.json")) {
+            return
+        }
+
+        try {
+            bakedAnimationMap[id] = KeyFramesAdapter.GEO_GSON.fromJson(
+                GsonHelper.getAsJsonObject(
+                    json!!.asJsonObject,
+                    "animations"
+                ),
+                BakedAnimations::class.java
+            )
+        } catch (ex: CompoundException) {
+            ex.withMessage("$id: Error loading animation file").printStackTrace()
+            BakedAnimations(Object2ObjectOpenHashMap())
+        } catch (ex: Exception) {
+            throw GeckoLibConstants.exception(id, "Error loading animation file", ex)
+        }
     }
 
     override fun onFinish(isClientSide: Boolean) {
