@@ -90,7 +90,7 @@ class ModelModule: SparkPackModule {
 
     private fun readGeckoLibBakedGeoModel(id: ResourceLocation, json: JsonElement?) {
         val bakedGeoModelMap = GeckoLibCache.getBakedModels()
-        if (!id.path.endsWith(".geo.json")) {
+        if (!id.path.endsWith(".geo")) {
             return
         }
         try {
@@ -111,7 +111,7 @@ class ModelModule: SparkPackModule {
                 )
             }
 
-            bakedGeoModelMap[id] =
+            bakedGeoModelMap[id.withSuffix(".json")] =
                 BakedModelFactory.getForNamespace(id.namespace).constructGeoModel(GeometryTree.fromModel(bakedGeoModel))
         } catch (ex: Exception) {
             throw GeckoLibConstants.exception(id, "Error loading model file", ex)

@@ -49,12 +49,12 @@ class AnimationModule: SparkPackModule {
 
     private fun readGeckoLibBakedAnimation(id: ResourceLocation, json: JsonElement?) {
         val bakedAnimationMap = GeckoLibCache.getBakedAnimations()
-        if (!id.path.endsWith(".animation.json")) {
+        if (!id.path.endsWith(".animation")) {
             return
         }
 
         try {
-            bakedAnimationMap[id] = KeyFramesAdapter.GEO_GSON.fromJson(
+            bakedAnimationMap[id.withSuffix(".json")] = KeyFramesAdapter.GEO_GSON.fromJson(
                 GsonHelper.getAsJsonObject(
                     json!!.asJsonObject,
                     "animations"
