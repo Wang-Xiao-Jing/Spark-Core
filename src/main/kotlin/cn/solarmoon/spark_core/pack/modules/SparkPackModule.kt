@@ -41,10 +41,10 @@ interface SparkPackModule {
         fileName: String
     ): ResourceLocation {
         var path = "spark_modules/${pack.meta.id.path}/${this.id}/"
-        for (i in 1 until pathSegments.size - 1) {
-            path += "/${pathSegments[i]}"
+        for (i in 0 until pathSegments.size) {
+            path += "${pathSegments[i]}/"
         }
-        path += "/${fileName}"
+        path += fileName
         val resourceLocation = ResourceLocation.fromNamespaceAndPath(pack.meta.id.namespace, path)
         return resourceLocation
     }

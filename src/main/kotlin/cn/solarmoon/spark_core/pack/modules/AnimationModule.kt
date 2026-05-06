@@ -35,14 +35,14 @@ class AnimationModule : SparkPackModule {
     ) {
         if (pathSegments.size < 2) throw IllegalArgumentException("动画的文件路径必须指向一个具体的模型名称（如：animations/minecraft/player/test.json 指向名为 minecraft:player 的模型，test.json为该模型下的动画）")
         val json = JsonParser.parseString(String(content, StandardCharsets.UTF_8))
-        val animationSet = OAnimationSet.CODEC.decode(JsonOps.INSTANCE, json).orThrow.first
-        val id = ResourceLocation.fromNamespaceAndPath(pathSegments[0], pathSegments[2])
 
         // 打入GeckoLib支持
         if (isClientSide && SparkPackLoader.isGeckoLib) {
             readGeckoLibBakedAnimation(pathSegments, fileName, json, pack)
         }
 
+        val animationSet = OAnimationSet.CODEC.decode(JsonOps.INSTANCE, json).orThrow.first
+        val id = ResourceLocation.fromNamespaceAndPath(pathSegments[0], pathSegments[2])
         OAnimationSet.ORIGINS.getOrPut(ModelIndex(pathSegments[1], id)) { OAnimationSet.EMPTY }.animations.putAll(animationSet.animations)
     }
 
