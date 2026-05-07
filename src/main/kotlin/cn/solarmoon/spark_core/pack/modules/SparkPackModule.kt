@@ -46,16 +46,16 @@ interface SparkPackModule {
     fun onFinish(isClientSide: Boolean, fromServer: Boolean) {}
 
     fun location(
-        pack: SparkPackage,
+        namespace: String,
         pathSegments: List<String>,
         fileName: String
     ): ResourceLocation {
-        var path = "spark_modules/${pack.meta.id.path}/${this.id}/"
+        var path = "spark_modules/${this.id}/"
         for (i in 0 until pathSegments.size) {
             path += "${pathSegments[i]}/"
         }
         path += fileName
-        val resourceLocation = ResourceLocation.fromNamespaceAndPath(pack.meta.id.namespace, path)
+        val resourceLocation = ResourceLocation.fromNamespaceAndPath(namespace, path)
         return resourceLocation
     }
 }

@@ -49,7 +49,7 @@ class ModelModule: SparkPackModule {
 
         // 打入GeckoLib支持
         if (isClientSide && SparkPackLoader.isGeckoLib) {
-            readGeckoLibBakedGeoModel(pathSegments, fileName, json, pack)
+            readGeckoLibBakedGeoModel(namespace,pathSegments, fileName, json)
         }
 
         val geometryArray = json.asJsonObject.getAsJsonArray("minecraft:geometry")
@@ -104,16 +104,16 @@ class ModelModule: SparkPackModule {
     }
 
     private fun readGeckoLibBakedGeoModel(
+        namespace: String,
         pathSegments: List<String>,
         fileName: String,
-        json: JsonElement,
-        pack: SparkPackage
+        json: JsonElement
     ) {
         val bakedGeoModelMap = GeckoLibCache.getBakedModels()
         if (!fileName.endsWith(".geo.json")) {
             return
         }
-        val resourceLocation = location(pack, pathSegments, fileName)
+        val resourceLocation = location(namespace, pathSegments, fileName)
         try {
             val bakedGeoModel = KeyFramesAdapter.GEO_GSON.fromJson(json.asJsonObject, Model::class.java)
 

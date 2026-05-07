@@ -37,30 +37,31 @@ class AnimationModule: SparkPackModule {
         fromServer: Boolean
     ) {
         if (!fromServer) return
-        if (pathSegments.size < 2) throw IllegalArgumentException("动画的文件路径必须指向一个具体的模型名称（如：minecraft/animations/entity/player/test.json 指向名为 minecraft:player 的entity类模型，test.json为该模型下的动画）")
+        if (pathSegments.isEmpty()) throw IllegalArgumentException("动画的文件路径必须指向一个具体的模型名称（如：minecraft/animations/entity/player/test.json 指向名为 minecraft:player 的entity类模型，test.json为该模型下的动画）")
         val json = JsonParser.parseString(String(content, StandardCharsets.UTF_8))
 
         // 打入GeckoLib支持
         if (isClientSide && SparkPackLoader.isGeckoLib) {
-            readGeckoLibBakedAnimation(pathSegments, fileName, json, pack)
+            readGeckoLibBakedAnimation(namespace, pathSegments, fileName, json)
         }
 
         val animationSet = OAnimationSet.CODEC.decode(JsonOps.INSTANCE, json).orThrow.first
-        val id = ResourceLocation.fromNamespaceAndPath(namespace, pathSegments[1])
+        val path = pathSegments.getOrNull(1) ?: fileName
+        val id = ResourceLocation.fromNamespaceAndPath(namespace, path)
         OAnimationSet.ORIGINS.getOrPut(ModelIndex(pathSegments[0], id)) { OAnimationSet.EMPTY }.animations.putAll(animationSet.animations)
     }
 
     private fun readGeckoLibBakedAnimation(
+        namespace: String,
         pathSegments: List<String>,
         fileName: String,
-        json: JsonElement,
-        pack: SparkPackage
+        json: JsonElement
     ) {
         val bakedAnimationMap = GeckoLibCache.getBakedAnimations()
         if (!fileName.endsWith(".animation.json")) {
             return
         }
-        val resourceLocation = location(pack, pathSegments, fileName)
+        val resourceLocation = location(namespace, pathSegments, fileName)
         try {
             bakedAnimationMap[resourceLocation] = KeyFramesAdapter.GEO_GSON.fromJson(
                 GsonHelper.getAsJsonObject(json.asJsonObject, this.id),
