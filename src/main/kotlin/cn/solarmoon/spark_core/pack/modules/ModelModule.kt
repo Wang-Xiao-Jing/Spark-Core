@@ -17,8 +17,12 @@ import net.minecraft.world.phys.Vec3
 import org.joml.Vector2i
 import software.bernie.geckolib.GeckoLibConstants
 import software.bernie.geckolib.cache.GeckoLibCache
+import software.bernie.geckolib.loading.json.FormatVersion
+import software.bernie.geckolib.loading.json.raw.Model
 import software.bernie.geckolib.loading.json.typeadapter.KeyFramesAdapter
 import software.bernie.geckolib.loading.`object`.BakedAnimations
+import software.bernie.geckolib.loading.`object`.BakedModelFactory
+import software.bernie.geckolib.loading.`object`.GeometryTree
 import software.bernie.geckolib.util.CompoundException
 import java.nio.charset.StandardCharsets
 import kotlin.collections.set
@@ -99,27 +103,39 @@ class ModelModule: SparkPackModule {
         OModel.ORIGINS[ModelIndex(pathSegments[0], id)] = OModel(coord.x, coord.y, LinkedHashMap(bones))
     }
 
-    private fun readGeckoLibBakedAnimation(
+    private fun readGeckoLibBakedGeoModel(
         pathSegments: List<String>,
         fileName: String,
         json: JsonElement,
         pack: SparkPackage
     ) {
-        val bakedAnimationMap = GeckoLibCache.getBakedAnimations()
-        if (!fileName.endsWith(".animation.json")) {
+        val bakedGeoModelMap = GeckoLibCache.getBakedModels()
+        if (!fileName.endsWith(".geo.json")) {
             return
         }
         val resourceLocation = location(pack, pathSegments, fileName)
         try {
-            bakedAnimationMap[resourceLocation] = KeyFramesAdapter.GEO_GSON.fromJson(
-                GsonHelper.getAsJsonObject(json.asJsonObject, this.id),
-                BakedAnimations::class.java
-            )
-        } catch (ex: CompoundException) {
-            ex.withMessage("$pathSegments: Error loading animation file").printStackTrace()
-            BakedAnimations(Object2ObjectOpenHashMap())
+            val bakedGeoModel = KeyFramesAdapter.GEO_GSON.fromJson(json.asJsonObject, Model::class.java)
+
+            when (bakedGeoModel.formatVersion()) {
+                FormatVersion.V_1_12_0 -> {}
+                FormatVersion.V_1_14_0 -> GeckoLibConstants.LOGGER.warn(
+                    "Unsupported geometry json version: 1.14.0 for model {}. This model may not appear as expected",
+                )
+
+                FormatVersion.V_1_21_0 -> GeckoLibConstants.LOGGER.warn(
+                    "Unsupported geometry json version: 1.21.0 for model {}. Supported versions: 1.12.0. Remove any rotated face UVs and re-export the model to fix",
+                )
+
+                null -> GeckoLibConstants.LOGGER.warn(
+                    "Unsupported geometry json version for model {}. Supported versions: 1.12.0",
+                )
+            }
+
+            bakedGeoModelMap[resourceLocation] = BakedModelFactory.getForNamespace(resourceLocation.namespace)
+                .constructGeoModel(GeometryTree.fromModel(bakedGeoModel))
         } catch (ex: Exception) {
-            throw GeckoLibConstants.exception(resourceLocation, "Error loading animation file", ex)
+            throw GeckoLibConstants.exception(resourceLocation, "Error loading model file", ex)
         }
     }
     
