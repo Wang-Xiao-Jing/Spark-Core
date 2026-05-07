@@ -1,3 +1,6 @@
+import java.text.SimpleDateFormat
+import java.util.Date
+
 plugins {
     id("java-library")
     id("maven-publish")
@@ -140,6 +143,26 @@ kotlin {
 
 tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        val buildDate = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date())
+
+        attributes(
+            "Implementation-Title" to project.name,
+            "Implementation-Version" to project.version,
+            "Implementation-Vendor" to "SolarMoonQAQ",
+            "Built-By" to System.getProperty("user.name"),
+            "Built-JDK" to System.getProperty("java.version"),
+            "Built-Date" to buildDate,
+            "Built-Gradle" to project.gradle.gradleVersion,
+            "Module-Name" to "spark_core",
+            "Specification-Title" to "Spark Core Library",
+            "Specification-Version" to project.version,
+            "Specification-Vendor" to "SolarMoonQAQ",
+            "Created-By" to "Gradle ${project.gradle.gradleVersion}",
+            "Automatic-Module-Name" to "spark_core"
+        )
+    }
 }
 
 tasks.register<JavaExec>("generateJSDocs") {

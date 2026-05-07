@@ -3,17 +3,25 @@ package cn.solarmoon.spark_core.pack.modules
 import cn.solarmoon.spark_core.SparkCore
 import cn.solarmoon.spark_core.animation.model.ModelIndex
 import cn.solarmoon.spark_core.animation.model.origin.*
+import cn.solarmoon.spark_core.pack.SparkPackLoader
 import cn.solarmoon.spark_core.pack.graph.SparkPackage
 import cn.solarmoon.spark_core.util.div
 import cn.solarmoon.spark_core.util.toRadians
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import com.mojang.serialization.JsonOps
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.util.GsonHelper
 import net.minecraft.world.phys.Vec3
 import org.joml.Vector2i
+import software.bernie.geckolib.GeckoLibConstants
+import software.bernie.geckolib.cache.GeckoLibCache
+import software.bernie.geckolib.loading.json.typeadapter.KeyFramesAdapter
+import software.bernie.geckolib.loading.`object`.BakedAnimations
+import software.bernie.geckolib.util.CompoundException
 import java.nio.charset.StandardCharsets
+import kotlin.collections.set
 
 class ModelModule: SparkPackModule {
 
@@ -34,6 +42,12 @@ class ModelModule: SparkPackModule {
         if (!fromServer) return
         if (pathSegments.isEmpty()) throw IllegalArgumentException("模型的文件路径必须指向一个模型父名称（如：minecraft/models/entity/player.json 指向名为 minecraft:player 的entity模型）")
         val json = JsonParser.parseString(String(content, StandardCharsets.UTF_8))
+
+        // 打入GeckoLib支持
+        if (isClientSide && SparkPackLoader.isGeckoLib) {
+            readGeckoLibBakedGeoModel(pathSegments, fileName, json, pack)
+        }
+
         val geometryArray = json.asJsonObject.getAsJsonArray("minecraft:geometry")
         val geometry = geometryArray.first().asJsonObject
         val bonesArray = geometry.getAsJsonArray("bones")
@@ -83,6 +97,30 @@ class ModelModule: SparkPackModule {
         val id = ResourceLocation.fromNamespaceAndPath(namespace, fileName.removeSuffix(".json"))
 
         OModel.ORIGINS[ModelIndex(pathSegments[0], id)] = OModel(coord.x, coord.y, LinkedHashMap(bones))
+    }
+
+    private fun readGeckoLibBakedAnimation(
+        pathSegments: List<String>,
+        fileName: String,
+        json: JsonElement,
+        pack: SparkPackage
+    ) {
+        val bakedAnimationMap = GeckoLibCache.getBakedAnimations()
+        if (!fileName.endsWith(".animation.json")) {
+            return
+        }
+        val resourceLocation = location(pack, pathSegments, fileName)
+        try {
+            bakedAnimationMap[resourceLocation] = KeyFramesAdapter.GEO_GSON.fromJson(
+                GsonHelper.getAsJsonObject(json.asJsonObject, this.id),
+                BakedAnimations::class.java
+            )
+        } catch (ex: CompoundException) {
+            ex.withMessage("$pathSegments: Error loading animation file").printStackTrace()
+            BakedAnimations(Object2ObjectOpenHashMap())
+        } catch (ex: Exception) {
+            throw GeckoLibConstants.exception(resourceLocation, "Error loading animation file", ex)
+        }
     }
     
     /**

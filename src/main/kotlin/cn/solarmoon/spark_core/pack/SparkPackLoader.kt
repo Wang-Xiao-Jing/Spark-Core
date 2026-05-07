@@ -7,11 +7,14 @@ import cn.solarmoon.spark_core.pack.graph.SparkPackage
 import cn.solarmoon.spark_core.pack.modules.SparkPackModule
 import cn.solarmoon.spark_core.pack.readable.ReadableDirectory
 import cn.solarmoon.spark_core.pack.readable.ReadableZip
+import net.neoforged.fml.ModList
 import net.neoforged.fml.ModLoader
 import net.neoforged.fml.loading.FMLPaths
 import java.nio.file.Files
 
 object SparkPackLoader {
+    // 判断GeckoLib是否加载
+    val isGeckoLib : Boolean = ModList.get().isLoaded("geckolib")
 
     val LOGGER = SparkCore.logger("拓展包加载器")
 

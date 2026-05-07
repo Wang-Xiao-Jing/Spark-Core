@@ -3,6 +3,7 @@ package cn.solarmoon.spark_core.pack.modules
 import cn.solarmoon.spark_core.pack.graph.SparkPackage
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import net.minecraft.resources.ResourceLocation
 
 interface SparkPackModule {
 
@@ -44,4 +45,17 @@ interface SparkPackModule {
      */
     fun onFinish(isClientSide: Boolean, fromServer: Boolean) {}
 
+    fun location(
+        pack: SparkPackage,
+        pathSegments: List<String>,
+        fileName: String
+    ): ResourceLocation {
+        var path = "spark_modules/${pack.meta.id.path}/${this.id}/"
+        for (i in 0 until pathSegments.size) {
+            path += "${pathSegments[i]}/"
+        }
+        path += fileName
+        val resourceLocation = ResourceLocation.fromNamespaceAndPath(pack.meta.id.namespace, path)
+        return resourceLocation
+    }
 }
