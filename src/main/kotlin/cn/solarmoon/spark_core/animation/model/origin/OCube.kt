@@ -189,11 +189,11 @@ data class OCube(
                 } else {
                     // 透视模式：使用缓存的多边形中心
                     // 将中心点转换到 View Space
-                    tmpBoneM4.transformPosition(polygon.center, tmpPos)
-                    val camDisSqr = tmpPos.lengthSquared() // 记录相机距离
-                    tmpPos.normalize() // 归一化以便于衡量面投影面积变化
-                    // 计算视线向量 (也就是 tmpPos 自身) 与法线的点积
-                    dotProduct = tmpPos.x() * tmpNormal.x + tmpPos.y() * tmpNormal.y + tmpPos.z() * tmpNormal.z
+                    val refPos = tmpBoneM4.transformPosition(polygon.center, tmpPos)
+                    val camDisSqr = refPos.lengthSquared() // 记录相机距离
+                    refPos.normalize() // 归一化以便于衡量面投影面积变化
+                    // 计算视线向量 (也就是 refPos 自身) 与法线的点积
+                    dotProduct = refPos.x() * tmpNormal.x + refPos.y() * tmpNormal.y + refPos.z() * tmpNormal.z
                     // 如果点积 >= 0，说明面背对相机，直接跳过渲染该面
                     if (dotProduct >= 0f) {
                         continue
@@ -203,9 +203,9 @@ data class OCube(
                 }
             }
             for (vertex in polygon.vertexes) {
-                tmpBoneM4.transformPosition(vertex.x, vertex.y, vertex.z, tmpPos)
+                val pos = tmpBoneM4.transformPosition(vertex.x, vertex.y, vertex.z, tmpPos)
                 buffer.addVertex(
-                    tmpPos.x(), tmpPos.y(), tmpPos.z(), color,
+                    pos.x(), pos.y(), pos.z(), color,
                     vertex.u, vertex.v,
                     packedOverlay, packedLight,
                     tmpNormal.x, tmpNormal.y, tmpNormal.z

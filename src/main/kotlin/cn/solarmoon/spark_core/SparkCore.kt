@@ -30,7 +30,7 @@ class SparkCore(modEventBus: IEventBus, modContainer: ModContainer) {
 
     init {
         EVENT_BUS = modEventBus
-        NativeLoader.load(MOD_ID, "bullet", fallbackModuleName = "bullet_sp")
+        NativeLoader.load(MOD_ID, "bullet")
         REGISTER.register(modEventBus)
 
         if (FMLEnvironment.dist.isClient) {
