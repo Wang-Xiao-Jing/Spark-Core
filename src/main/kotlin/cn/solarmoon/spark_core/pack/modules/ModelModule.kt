@@ -110,7 +110,7 @@ class ModelModule: SparkPackModule {
         json: JsonElement
     ) {
         val bakedGeoModelMap = GeckoLibCache.getBakedModels()
-        if (!fileName.endsWith(".geo.json")) {
+        if (!fileName.endsWith(".json")) {
             return
         }
         val resourceLocation = location(namespace, pathSegments, fileName)

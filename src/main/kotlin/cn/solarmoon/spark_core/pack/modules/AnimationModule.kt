@@ -58,7 +58,7 @@ class AnimationModule: SparkPackModule {
         json: JsonElement
     ) {
         val bakedAnimationMap = GeckoLibCache.getBakedAnimations()
-        if (!fileName.endsWith(".animation.json")) {
+        if (!fileName.endsWith(".json")) {
             return
         }
         val resourceLocation = location(namespace, pathSegments, fileName)
